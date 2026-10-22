@@ -298,7 +298,7 @@ input,select,textarea{font-size:16px}
           <button class="btn" id="loadBackup">불러오기</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">앱 버전: GitHub 연결판 (10월 22일)</p>
+      <p class="hint" style="margin:0">앱 버전: 첫 화면 실시간 (10월 22일)</p>
       <div class="card">
         <h2>활동별 기기</h2>
         <p>활동 코드마다 노트북·아이패드가 필요한지 정해 두면, 같은 기기를 동시에 쓰는 블록을 찾아 빨간색으로 표시해요. 줌 수업(코드에 409가 들어간 활동)은 이 표와 상관없이 항상 노트북을, M반 리스닝은 항상 아이패드를 써요. 기기 규칙과 학생 명단은 월·수·금 모두 같이 써요.</p>
@@ -795,15 +795,11 @@ let toastT;
 function toast(m){const el=$('#toast');el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,1800)}
 
 state=load();
-(function initTime(){
-  const d=new Date(), real=d.getHours()*60+d.getMinutes();
-  if(!state.blocks.length) return;
-  const mn=Math.min(...state.blocks.map(b=>b.start)), mx=Math.max(...state.blocks.map(b=>b.end));
-  if(real<mn-30||real>mx+30) sim=mn+52; // 수업 시간 밖이면 예시 시점으로 미리보기
-})();
 try{const tab=localStorage.getItem(KEY+'-tab'); if(tab&&tab!=='now') document.querySelector(`[data-view="${tab}"]`)?.click()}catch(e){}
 render();
 setInterval(()=>{if(sim==null)render()},15000);
+// 앱을 다시 열면 미리보기를 끝내고 실시간으로 돌아가요
+addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){sim=null;render()}});
 </script>
 
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
