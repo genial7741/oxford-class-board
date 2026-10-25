@@ -107,6 +107,18 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .ttimes .lab{grid-column:1/-1;font-size:12px;color:var(--muted);font-weight:600}
 .ttimes input{-webkit-appearance:none;appearance:none;min-width:0;width:100%;min-height:36px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 8px;text-align:left}
 .ttimes .hint{grid-column:2/-1;font-size:12px;margin:-2px 0 4px}
+.shead .tabs.mini{margin-left:auto;padding:2px}
+.tabs.mini button{padding:4px 12px;font-size:13px}
+.hwtbl{width:100%;border-collapse:collapse;table-layout:fixed;margin:6px 0 10px}
+.hwtbl th{font-size:12px;color:var(--muted);font-weight:600;line-height:1.2;padding:2px 2px 6px;border-bottom:1px solid var(--line);vertical-align:bottom}
+.hwtbl th:first-child{text-align:left;width:30%}
+.hwtbl td{border-bottom:1px solid var(--line-soft);text-align:center;padding:0}
+.hwtbl td.nm{text-align:left;padding:6px 4px;font-weight:600;word-break:keep-all;overflow-wrap:anywhere}
+.hwtbl td.nm small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.hwtbl label{display:flex;align-items:center;justify-content:center;min-height:44px;cursor:pointer}
+.hwtbl input{width:24px;height:24px;margin:0;accent-color:var(--accent)}
+.hwtbl tfoot td{border:0;padding:6px 2px;font-family:var(--f-num);font-size:13px;color:var(--muted)}
+.hwtbl tfoot td:first-child{text-align:left;padding-left:4px;font-family:inherit}
 .stu .books textarea{min-height:0;font-family:inherit;line-height:1.5;padding:6px 10px}
 .flash{box-shadow:0 0 0 3px var(--accent)}
 .btn.sm{padding:4px 10px;font-size:13px}
@@ -324,7 +336,7 @@ input,select,textarea{font-size:16px}
           <button class="btn" id="loadBackup">불러오기</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">앱 버전: 블록 끝 시간 표시 (10월 25일)</p>
+      <p class="hint" style="margin:0">앱 버전: 숙제 검사 체크 (10월 25일)</p>
       <div class="card">
         <h2>활동별 기기</h2>
         <p>활동 코드마다 노트북·아이패드가 필요한지 정해 두면, 같은 기기를 동시에 쓰는 블록을 찾아 빨간색으로 표시해요. 줌 수업(코드에 409가 들어간 활동)은 이 표와 상관없이 항상 노트북을, M반 리스닝은 항상 아이패드를 써요. 기기 규칙과 학생 명단은 월·수·금 모두 같이 써요.</p>
@@ -780,6 +792,18 @@ function classList(){
   Object.keys(state.times).forEach(c=>s.add(c));
   return [...s].sort((a,b)=>classStart(a)-classStart(b)||natSort(a,b));
 }
+// 숙제 검사: 학생마다 hw:{w,s,r,t} (체크한 것만 true). 반마다 명단/숙제 보기 전환
+const HW=[['w','단어쓰기'],['s','문장쓰기'],['r','녹음'],['t','단어재시험']];
+const stuMode={};
+const hwDone=(list,k)=>`${list.filter(st=>st.hw&&st.hw[k]).length}/${list.length}`;
+function hwTable(cls,list,match){
+  if(!list.length) return '<p class="hint" style="margin:8px 0">아직 학생이 없어요. 명단에서 학생을 추가해 주세요.</p>';
+  return `<table class="hwtbl"><thead><tr><th>이름</th>${HW.map(([,n])=>`<th>${n.replace(/^(단어|문장)(.+)$/,'$1<br>$2')}</th>`).join('')}</tr></thead><tbody>
+    ${list.map((st,i)=>`<tr ${match(st)?'':'hidden'}><td class="nm">${esc(st.ko)||'<span class="hint">이름 없음</span>'}${st.en?`<small>${esc(st.en)}</small>`:''}</td>
+      ${HW.map(([k,n])=>`<td><label><input type="checkbox" data-hw-cls="${esc(cls)}" data-i="${i}" data-hw="${k}" ${st.hw&&st.hw[k]?'checked':''} aria-label="${esc(st.ko||st.en)} ${n}"></label></td>`).join('')}</tr>`).join('')}
+    </tbody><tfoot><tr><td>완료</td>${HW.map(([k])=>`<td data-done="${k}">${hwDone(list,k)}</td>`).join('')}</tr></tfoot></table>
+    <div class="row"><button class="btn sm danger" data-hw-clear="${esc(cls)}">체크 비우기</button></div>`;
+}
 function renderStudents(){
   const q=$('#stuSearch').value.trim().toLowerCase(), t=nowMin();
   const inSched=new Set(state.blocks.map(b=>b.cls));
@@ -791,8 +815,9 @@ function renderStudents(){
     const bl=state.blocks.filter(b=>b.cls===cls).sort(byStart);
     const nx=bl.find(b=>b.end>t)||bl[0];
     return `<div class="card" id="stu-${esc(cls)}">
-      <div class="shead"><h2>${esc(cls)}</h2><span class="hint">${list.length}명${nx?` · ${esc(roomLabel(nx.room))} ${fmt(bl[0].start)}–${fmt(bl[bl.length-1].end)}`:''}</span></div>
-      <label class="books"><span>교재</span><textarea rows="2" data-books="${esc(cls)}" placeholder="한 줄에 한 권씩&#10;예: Reading Explorer 2" aria-label="${esc(cls)} 교재">${esc(books)}</textarea></label>
+      <div class="shead"><h2>${esc(cls)}</h2><span class="hint">${list.length}명${nx?` · ${esc(roomLabel(nx.room))} ${fmt(bl[0].start)}–${fmt(bl[bl.length-1].end)}`:''}</span>
+        <div class="tabs mini">${[['list','명단'],['hw','숙제']].map(([m,n])=>`<button data-mode="${m}" data-mcls="${esc(cls)}" aria-selected="${(stuMode[cls]||'list')===m}">${n}</button>`).join('')}</div></div>
+      ${stuMode[cls]==='hw'?hwTable(cls,list,match):`<label class="books"><span>교재</span><textarea rows="2" data-books="${esc(cls)}" placeholder="한 줄에 한 권씩&#10;예: Reading Explorer 2" aria-label="${esc(cls)} 교재">${esc(books)}</textarea></label>
       <div class="ttimes"><span class="lab">수업 시간</span>${DAYS.map(([k,n])=>{
         const tm=(state.times[cls]||{})[k]||{}, bl=state.days[k].blocks.filter(b=>b.cls===cls);
         const sch=bl.length?`시간표 ${fmt(Math.min(...bl.map(b=>b.start)))}–${fmt(Math.max(...bl.map(b=>b.end)))}`:'시간표에 없음';
@@ -813,7 +838,7 @@ function renderStudents(){
       <div class="bulk" data-bulk-box="${esc(cls)}" hidden>
         <textarea placeholder="한 줄에 한 명씩&#10;김민준 Jason&#10;이서연 Chloe"></textarea>
         <div class="row" style="margin-top:6px"><button class="btn sm" data-bulk-add="${esc(cls)}">명단에 추가</button><span class="hint">한글은 한국 이름, 영어는 영어 이름으로 나눠 넣어요.</span></div>
-      </div>
+      </div>`}
     </div>`;
   }).join('');
   $('#stu').innerHTML=html||'<p class="empty">찾는 이름이 없어요.</p>';
@@ -822,6 +847,14 @@ $('#stu').addEventListener('change',e=>{
   const el=e.target; if(!el.dataset.k) return;
   const st=(state.students[el.dataset.cls]||[])[+el.dataset.i]; if(!st) return;
   st[el.dataset.k]=el.value.trim(); save();
+});
+$('#stu').addEventListener('change',e=>{
+  const el=e.target; if(el.dataset.hwCls==null) return;
+  const list=state.students[el.dataset.hwCls]||[], st=list[+el.dataset.i]; if(!st) return;
+  st.hw=st.hw||{}; if(el.checked) st.hw[el.dataset.hw]=true; else delete st.hw[el.dataset.hw];
+  if(!Object.keys(st.hw).length) delete st.hw;
+  save();
+  const td=el.closest('table').querySelector(`[data-done="${el.dataset.hw}"]`); if(td) td.textContent=hwDone(list,el.dataset.hw);
 });
 // 반별 수업 시간 기록 (시간표 블록과는 따로 저장해요)
 $('#stu').addEventListener('change',e=>{
@@ -841,6 +874,12 @@ $('#stu').addEventListener('input',e=>{
 });
 $('#stu').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return; const d=b.dataset;
+  if(d.mode!=null){stuMode[d.mcls]=d.mode; renderStudents(); return}
+  if(d.hwClear!=null){
+    if(b.dataset.armed){(state.students[d.hwClear]||[]).forEach(st=>delete st.hw); save(); renderStudents(); toast('숙제 체크를 비웠어요')}
+    else{b.dataset.armed='1'; b.textContent='한 번 더 누르면 비워요'; setTimeout(()=>{if(b.isConnected){delete b.dataset.armed; b.textContent='체크 비우기'}},4000)}
+    return;
+  }
   if(d.addStu!=null){const L=(state.students[d.addStu]=state.students[d.addStu]||[]); L.push({ko:'',en:''}); save(); renderStudents(); document.getElementById(`s-${d.addStu}-${L.length-1}-ko`)?.focus()}
   else if(d.delCls!=null){state.students[d.delCls].splice(+d.i,1); save(); renderStudents(); toast('삭제했어요')}
   else if(d.bulk!=null){const box=document.querySelector(`[data-bulk-box="${CSS.escape(d.bulk)}"]`); box.hidden=!box.hidden; if(!box.hidden) box.querySelector('textarea').focus()}
