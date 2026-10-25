@@ -75,6 +75,12 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .alert{border:1px solid var(--bad);background:var(--bad-bg);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .alert h2{font-size:15px;margin:0;color:var(--bad)}
 .alert ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+.alert:not([open]){gap:0}
+.alert summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:32px;margin:-4px 0}
+.alert summary::-webkit-details-marker{display:none}
+.alert summary h2{flex:1}
+.alert summary::after{content:'▾';color:var(--bad);font-size:16px;transition:transform .15s}
+.alert:not([open]) summary::after{transform:rotate(-90deg)}
 .sugg{display:flex;flex-direction:column;gap:6px;padding-top:4px;border-top:1px dashed var(--line)}
 .sugg-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .sugg-row span{min-width:0}
@@ -146,6 +152,11 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .legend{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:4px}
 .legend i{width:12px;height:12px;border-radius:3px;border:1px solid var(--line)}
+.ctimes{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:baseline;font-size:15px}
+.ctimes .t{font-family:var(--f-num);text-align:right}
+.ctimes .r{color:var(--muted);font-size:14px}
+.ctimes .live{font-weight:700}
+.ctimes .past{opacity:.45}
 .gridwrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
 .g{display:grid;min-width:max-content}
 .gh{position:sticky;top:0;font-weight:700;font-size:14px;text-align:center;padding:8px 4px;border-bottom:1px solid var(--line);border-left:1px solid var(--line-soft);background:var(--surface)}
@@ -158,7 +169,13 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .tick.major{color:var(--ink);font-weight:600}
 .nowline{position:absolute;left:0;right:0;height:2px;background:var(--bad);z-index:3;pointer-events:none}
 .blk{position:absolute;left:3px;right:3px;border:1px solid rgba(0,0,0,.08);border-radius:7px;padding:3px 7px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;color:var(--ink)}
-.blk .bn{font-weight:700;font-size:13px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk .bn{font-size:13px;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere}
+.blk .bn b{display:block}
+/* 짧은 블록: 반·과목을 이어 쓰고 시작 시간은 뺀다 (시간은 반별 목록과 눈금에 있음) */
+.blk.mid .bn b,.blk.tight .bn b{display:inline;margin-right:4px}
+.blk.mid .bt,.blk.tight .bt{display:none}
+.blk.mid{justify-content:center}
+.blk.tight .bn{font-size:12px;line-height:1.15}
 .blk .bt{font-family:var(--f-num);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
 .blk.tight{flex-direction:row;align-items:center;gap:6px;padding-block:0}
 .blk.past{opacity:.45}
@@ -228,8 +245,8 @@ input,select,textarea{font-size:16px}
     </div>
     <div class="tabs" id="days" aria-label="요일"></div>
     <div class="tabs" role="tablist">
-      <button role="tab" data-view="now" aria-selected="true">지금</button>
-      <button role="tab" data-view="grid" aria-selected="false">시간표</button>
+      <button role="tab" data-view="grid" aria-selected="true">시간표</button>
+      <button role="tab" data-view="now" aria-selected="false">지금</button>
       <button role="tab" data-view="stu" aria-selected="false">학생</button>
       <button role="tab" data-view="set" aria-selected="false">편집·설정</button>
     </div>
@@ -239,7 +256,7 @@ input,select,textarea{font-size:16px}
 <main class="gut">
   <div id="alerts"></div>
 
-  <section id="view-now">
+  <section id="view-now" hidden>
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="sect-h">방별 진행</div>
       <div class="rooms" id="rooms"></div>
@@ -248,7 +265,7 @@ input,select,textarea{font-size:16px}
     </div>
   </section>
 
-  <section id="view-grid" hidden>
+  <section id="view-grid">
     <div style="display:flex;flex-direction:column;gap:12px">
       <div class="toolbar">
         <button class="btn" id="addBtn">＋ 블록 추가</button>
@@ -258,6 +275,7 @@ input,select,textarea{font-size:16px}
           <span><i class="dot laptop" style="border:0"></i>노트북</span><span><i class="dot ipad" style="border:0"></i>아이패드</span><span><i class="dot native" style="border:0"></i>원어민</span>
         </div>
       </div>
+      <div class="card" id="classTimes" hidden></div>
       <div class="gridwrap"><div id="grid"></div></div>
       <p class="hint" style="margin:0">블록을 누르면 시간·활동·기기를 고치거나 다음 활동과 순서를 바꿀 수 있어요.</p>
     </div>
@@ -301,7 +319,7 @@ input,select,textarea{font-size:16px}
           <button class="btn" id="loadBackup">불러오기</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">앱 버전: 반별 교재 칸 (10월 25일)</p>
+      <p class="hint" style="margin:0">앱 버전: 시간표 첫 화면 (10월 25일)</p>
       <div class="card">
         <h2>활동별 기기</h2>
         <p>활동 코드마다 노트북·아이패드가 필요한지 정해 두면, 같은 기기를 동시에 쓰는 블록을 찾아 빨간색으로 표시해요. 줌 수업(코드에 409가 들어간 활동)은 이 표와 상관없이 항상 노트북을, M반 리스닝은 항상 아이패드를 써요. 기기 규칙과 학생 명단은 월·수·금 모두 같이 써요.</p>
@@ -399,7 +417,8 @@ const SAMPLE=`4 2:00-2:25 P3A wt복습
 기타 5:30-5:50 M3 내신`;
 
 let seq=1; const nid=()=>'b'+(seq++);
-let state, sim=null;
+let state, sim=null, alertsOpen=true;
+try{alertsOpen=localStorage.getItem('class-board-v2-alerts')!=='closed'}catch(e){}
 
 const pad=n=>String(n).padStart(2,'0');
 const fmt=m=>{let h=Math.floor(m/60),mm=m%60; if(h>12)h-=12; return h+':'+pad(mm)};
@@ -525,7 +544,8 @@ function isHard(b,dev){return dev==='native'||b.dev===dev||(dev==='laptop'&&ZOOM
 function renderAlerts(cs){
   if(!cs.length){$('#alerts').innerHTML='';return}
   const item=(b,dev)=>`<button class="link" data-edit="${b.id}">${esc(b.cls)} ${esc(label(b.act))}</button> <span class="hint">${esc(roomLabel(b.room))} ${fmt(b.start)}–${fmt(b.end)}</span> ${isHard(b,dev)?'<span class="chip" style="color:var(--bad)">필수</span>':(dev!=='native'?`<button class="btn sm line" data-release="${b.id}" data-dev="${dev}">이번엔 ${DEVN[dev]} 없이</button>`:'')}`;
-  $('#alerts').innerHTML=`<div class="alert"><h2>${dayName(state.day)}요일 · 같은 기기나 원어민 선생님이 동시에 필요한 블록 ${cs.length}건</h2><ul>${cs.map(c=>`<li style="display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center"><b>${DEVN[c.dev]}</b> ${item(c.a,c.dev)} <span class="hint">/</span> ${item(c.b,c.dev)}</li>`).join('')}</ul><span class="hint">줌 수업과 M반 리스닝은 기기가 꼭 필요해서 「필수」로 표시해요. 나머지는 이번 수업만 기기 없이 진행하도록 바꿀 수 있고, 블록 이름을 누르면 시간이나 기기를 고칠 수 있어요.</span></div>`;
+  $('#alerts').innerHTML=`<details class="alert" ${alertsOpen?'open':''}><summary><h2>${dayName(state.day)}요일 · 같은 기기나 원어민 선생님이 동시에 필요한 블록 ${cs.length}건</h2></summary><ul>${cs.map(c=>`<li style="display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center"><b>${DEVN[c.dev]}</b> ${item(c.a,c.dev)} <span class="hint">/</span> ${item(c.b,c.dev)}</li>`).join('')}</ul><span class="hint">줌 수업과 M반 리스닝은 기기가 꼭 필요해서 「필수」로 표시해요. 나머지는 이번 수업만 기기 없이 진행하도록 바꿀 수 있고, 블록 이름을 누르면 시간이나 기기를 고칠 수 있어요.</span></details>`;
+  $('#alerts .alert').addEventListener('toggle',e=>{alertsOpen=e.target.open; try{localStorage.setItem('class-board-v2-alerts',alertsOpen?'open':'closed')}catch(_){}});
   $('#alerts').querySelectorAll('[data-release]').forEach(btn=>btn.onclick=()=>{const b=state.blocks.find(x=>x.id===btn.dataset.release); if(!b)return; b.dev='none'; save(); render(); toast(`${b.cls} ${label(b.act)}: 기기 없이 진행`)});
 }
 function devChips(b){return resOf(b).map(d=>`<span class="chip ${d}">${DEVN[d]}</span>`).join('')+(isLocked(b)?'<span class="chip" style="color:var(--muted)">고정</span>':'')}
@@ -587,13 +607,13 @@ function shiftClass(cls,d){
 function renderGrid(cs){
   const bl=state.blocks;
   if(!bl.length){$('#grid').innerHTML='<p class="empty">블록이 없어요. ＋ 블록 추가나 편집·설정의 텍스트 입력으로 시간표를 넣어 주세요.</p>';return}
-  const t=nowMin(), PX=2.4, OFF=10;
+  const t=nowMin(), PX=3.2, OFF=10;
   const min=Math.floor(Math.min(...bl.map(b=>b.start))/30)*30, max=Math.ceil(Math.max(...bl.map(b=>b.end))/30)*30;
   const H=(max-min)*PX+OFF*2;
   const rooms=roomList(); const bad=new Set(); cs.forEach(c=>{bad.add(c.a.id);bad.add(c.b.id)});
   const line=(t>=min&&t<=max)?`<div class="nowline" style="top:${(t-min)*PX+OFF}px"></div>`:'';
   const colStyle=`height:${H}px;--step:${10*PX}px;--off:${OFF}px`;
-  let h=`<div class="g" style="grid-template-columns:48px repeat(${rooms.length},minmax(104px,1fr)) 76px 76px 76px">`;
+  let h=`<div class="g" style="grid-template-columns:48px repeat(${rooms.length},minmax(128px,1fr)) 76px 76px 76px">`;
   h+=`<div class="gh"></div>`+rooms.map(r=>`<div class="gh">${esc(roomLabel(r))}</div>`).join('')+`<div class="gh laptop">노트북</div><div class="gh ipad">아이패드</div><div class="gh native">원어민</div>`;
   let ax=''; for(let m=min;m<=max;m+=10) ax+=`<div class="tick ${m%30===0?'major':''}" style="top:${(m-min)*PX+OFF}px">${m%30===0?fmt(m):'·'}</div>`;
   h+=`<div class="axis" style="height:${H}px">${ax}</div>`;
@@ -601,8 +621,8 @@ function renderGrid(cs){
     h+=`<div class="col" style="${colStyle}">${line}`;
     bl.filter(b=>b.room===r).forEach(b=>{
       const ht=(b.end-b.start)*PX-3, top=(b.start-min)*PX+OFF+1;
-      const c=['blk',colorClass(b),bad.has(b.id)?'bad':'',(t>=b.start&&t<b.end)?'live':'',b.end<=t?'past':'',ht<34?'tight':''].join(' ');
-      h+=`<button class="${c}" style="top:${top}px;height:${ht}px" data-id="${b.id}" title="${esc(b.cls+' '+b.act+' '+fmt(b.start)+'–'+fmt(b.end))}"><span class="bn">${esc(b.cls)} ${esc(b.act)}</span><span class="bt">${fmt(b.start)}${resOf(b).map(d=>`<i class="dot ${d}"></i>`).join('')}</span></button>`;
+      const c=['blk',colorClass(b),bad.has(b.id)?'bad':'',(t>=b.start&&t<b.end)?'live':'',b.end<=t?'past':'',ht<40?'tight':ht<60?'mid':''].join(' ');
+      h+=`<button class="${c}" style="top:${top}px;height:${ht}px" data-id="${b.id}" title="${esc(b.cls+' '+b.act+' '+fmt(b.start)+'–'+fmt(b.end))}"><span class="bn"><b>${esc(b.cls)}</b>${esc(label(b.act)||b.act)}</span><span class="bt">${fmt(b.start)}${resOf(b).map(d=>`<i class="dot ${d}"></i>`).join('')}</span></button>`;
     });
     h+=`</div>`;
   });
@@ -620,6 +640,22 @@ function renderGrid(cs){
   });
   h+=`</div>`;
   $('#grid').innerHTML=h;
+  renderClassTimes();
+}
+function classStart(cls){const s=state.blocks.filter(b=>b.cls===cls).map(b=>b.start); return s.length?Math.min(...s):Infinity}
+function renderClassTimes(){
+  const t=nowMin(), box=$('#classTimes');
+  const classes=[...new Set(state.blocks.map(b=>b.cls).filter(c=>c&&c!=='청소'))]
+    .sort((a,b)=>classStart(a)-classStart(b)||natSort(a,b));
+  if(!classes.length){box.hidden=true;return}
+  box.hidden=false;
+  box.innerHTML=`<h2>반별 수업 시간 (${dayName(state.day)})</h2><div class="ctimes">${classes.map(cls=>{
+    const bl=state.blocks.filter(b=>b.cls===cls).sort(byStart);
+    const st=bl[0].start, en=Math.max(...bl.map(b=>b.end));
+    const rooms=[...new Set(bl.map(b=>roomLabel(b.room)))].join(' · ');
+    const c=t>=st&&t<en?'live':en<=t?'past':'';
+    return `<button class="link ${c}" data-stu="${esc(cls)}">${esc(cls)}</button><span class="r ${c}">${esc(rooms)}</span><span class="t ${c}">${fmt(st)}–${fmt(en)}</span>`;
+  }).join('')}</div>`;
 }
 
 function renderSettings(){
@@ -735,7 +771,7 @@ function classList(){
   const s=new Set(state.blocks.map(b=>b.cls).filter(c=>c&&c!=='청소'));
   Object.keys(state.students).forEach(c=>s.add(c));
   Object.keys(state.books).forEach(c=>s.add(c));
-  return [...s].sort(natSort);
+  return [...s].sort((a,b)=>classStart(a)-classStart(b)||natSort(a,b));
 }
 function renderStudents(){
   const q=$('#stuSearch').value.trim().toLowerCase(), t=nowMin();
@@ -808,7 +844,7 @@ let toastT;
 function toast(m){const el=$('#toast');el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,1800)}
 
 state=load();
-try{const tab=localStorage.getItem(KEY+'-tab'); if(tab&&tab!=='now') document.querySelector(`[data-view="${tab}"]`)?.click()}catch(e){}
+try{const tab=localStorage.getItem(KEY+'-tab'); if(tab&&tab!=='grid') document.querySelector(`[data-view="${tab}"]`)?.click()}catch(e){}
 render();
 setInterval(()=>{if(sim==null)render()},15000);
 // 앱을 다시 열면 미리보기를 끝내고 실시간으로 돌아가요
