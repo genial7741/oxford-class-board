@@ -175,13 +175,14 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .blk{position:absolute;left:3px;right:3px;border:1px solid rgba(0,0,0,.08);border-radius:7px;padding:3px 7px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;color:var(--ink)}
 .blk .bn{font-size:13px;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere}
 .blk .bn b{display:block}
-/* 짧은 블록: 반·과목을 이어 쓰고 시작 시간은 뺀다 (시간은 반별 목록과 눈금에 있음) */
+/* 짧은 블록: 반·과목을 한 줄로 이어 쓰고, 그 아래에 시작–끝 시간을 작게 쓴다 */
 .blk.mid .bn b,.blk.tight .bn b{display:inline;margin-right:4px}
-.blk.mid .bt,.blk.tight .bt{display:none}
-.blk.mid{justify-content:center}
-.blk.tight .bn{font-size:12px;line-height:1.15}
+.blk.mid{justify-content:center;gap:1px}
+.blk.tight{justify-content:center}
+.blk.tight .bn{font-size:12px;line-height:1.15;white-space:nowrap}
+.blk.tight .bt{font-size:10px;line-height:1.1}
 .blk .bt{font-family:var(--f-num);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
-.blk.tight{flex-direction:row;align-items:center;gap:6px;padding-block:0}
+.blk.tight{padding-block:0}
 .blk.past{opacity:.45}
 .blk.live{outline:2px solid var(--ink);outline-offset:-1px}
 .blk.bad{outline:2px solid var(--bad);outline-offset:-1px;box-shadow:0 0 0 3px var(--bad-bg)}
@@ -323,7 +324,7 @@ input,select,textarea{font-size:16px}
           <button class="btn" id="loadBackup">불러오기</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">앱 버전: 반별 수업 시간 기록 (10월 25일)</p>
+      <p class="hint" style="margin:0">앱 버전: 블록 끝 시간 표시 (10월 25일)</p>
       <div class="card">
         <h2>활동별 기기</h2>
         <p>활동 코드마다 노트북·아이패드가 필요한지 정해 두면, 같은 기기를 동시에 쓰는 블록을 찾아 빨간색으로 표시해요. 줌 수업(코드에 409가 들어간 활동)은 이 표와 상관없이 항상 노트북을, M반 리스닝은 항상 아이패드를 써요. 기기 규칙과 학생 명단은 월·수·금 모두 같이 써요.</p>
@@ -626,7 +627,7 @@ function renderGrid(cs){
     bl.filter(b=>b.room===r).forEach(b=>{
       const ht=(b.end-b.start)*PX-3, top=(b.start-min)*PX+OFF+1;
       const c=['blk',colorClass(b),bad.has(b.id)?'bad':'',(t>=b.start&&t<b.end)?'live':'',b.end<=t?'past':'',ht<40?'tight':ht<60?'mid':''].join(' ');
-      h+=`<button class="${c}" style="top:${top}px;height:${ht}px" data-id="${b.id}" title="${esc(b.cls+' '+b.act+' '+fmt(b.start)+'–'+fmt(b.end))}"><span class="bn"><b>${esc(b.cls)}</b>${esc(label(b.act)||b.act)}</span><span class="bt">${fmt(b.start)}${resOf(b).map(d=>`<i class="dot ${d}"></i>`).join('')}</span></button>`;
+      h+=`<button class="${c}" style="top:${top}px;height:${ht}px" data-id="${b.id}" title="${esc(b.cls+' '+b.act+' '+fmt(b.start)+'–'+fmt(b.end))}"><span class="bn"><b>${esc(b.cls)}</b>${esc(label(b.act)||b.act)}</span><span class="bt">${fmt(b.start)}–${fmt(b.end)}${resOf(b).map(d=>`<i class="dot ${d}"></i>`).join('')}</span></button>`;
     });
     h+=`</div>`;
   });
