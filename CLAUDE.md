@@ -18,7 +18,7 @@
 ## 데이터
 
 - 모든 데이터는 기기의 `localStorage`(키 `class-board-v2`)에 있다. **키 이름이나 저장 구조를 바꿀 때는 기존 데이터를 옮기는 코드를 반드시 같이 넣는다.** 데이터가 사라지면 학생 명단을 다시 입력해야 한다
-- 구조: `days.{mon,wed,fri}.blocks / base`, `rules`(활동 코드 → 기기), `classLen`, `students`(반 → [{ko, en}])
+- 구조: `days.{mon,wed,fri}.blocks / base`, `rules`(활동 코드 → 기기), `classLen`, `students`(반 → [{ko, en}]), `books`(반 → 교재 문자열, 한 줄에 한 권)
 - 편집·설정 탭의 백업 코드(JSON)로 기기 간 이동을 한다. 백업 형식이 바뀌어도 예전 백업을 불러올 수 있게 유지한다
 - 학생 이름이 들어 있으므로 외부 서버로 보내는 기능을 넣을 때는 먼저 사용자에게 확인한다
 
