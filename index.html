@@ -103,6 +103,10 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .stu textarea{min-height:110px}
 .books{display:block;margin:6px 0 8px}
 .books span{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px}
+.ttimes{display:grid;grid-template-columns:22px minmax(0,1fr) auto minmax(0,1fr);gap:4px 6px;align-items:center;margin:0 0 10px}
+.ttimes .lab{grid-column:1/-1;font-size:12px;color:var(--muted);font-weight:600}
+.ttimes input{-webkit-appearance:none;appearance:none;min-width:0;width:100%;min-height:36px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 8px;text-align:left}
+.ttimes .hint{grid-column:2/-1;font-size:12px;margin:-2px 0 4px}
 .stu .books textarea{min-height:0;font-family:inherit;line-height:1.5;padding:6px 10px}
 .flash{box-shadow:0 0 0 3px var(--accent)}
 .btn.sm{padding:4px 10px;font-size:13px}
@@ -254,7 +258,7 @@ input,select,textarea{font-size:16px}
 </header>
 
 <main class="gut">
-  <div id="alerts"></div>
+  <div id="alerts" hidden></div>
 
   <section id="view-now" hidden>
     <div style="display:flex;flex-direction:column;gap:16px">
@@ -319,7 +323,7 @@ input,select,textarea{font-size:16px}
           <button class="btn" id="loadBackup">불러오기</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">앱 버전: 시간표 첫 화면 (10월 25일)</p>
+      <p class="hint" style="margin:0">앱 버전: 반별 수업 시간 기록 (10월 25일)</p>
       <div class="card">
         <h2>활동별 기기</h2>
         <p>활동 코드마다 노트북·아이패드가 필요한지 정해 두면, 같은 기기를 동시에 쓰는 블록을 찾아 빨간색으로 표시해요. 줌 수업(코드에 409가 들어간 활동)은 이 표와 상관없이 항상 노트북을, M반 리스닝은 항상 아이패드를 써요. 기기 규칙과 학생 명단은 월·수·금 모두 같이 써요.</p>
@@ -466,7 +470,7 @@ function toText(){
 
 function load(){
   let s=null; try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
-  const st={days:{},rules:Object.assign({},DEFAULT_RULES,(s&&s.rules)||{}),classLen:(s&&s.classLen)||80,students:(s&&s.students)||{},books:(s&&s.books)||{}};
+  const st={days:{},rules:Object.assign({},DEFAULT_RULES,(s&&s.rules)||{}),classLen:(s&&s.classLen)||80,students:(s&&s.students)||{},books:(s&&s.books)||{},times:(s&&s.times)||{}};
   if(!(s&&s.rulesV3)) st.rules.r='laptop';
   const take=a=>(a||[]).map(b=>({...b,id:nid()}));
   DAYS.forEach(([k])=>{
@@ -480,7 +484,7 @@ function load(){
 function save(){
   state.days[state.day].blocks=state.blocks;
   const days={}; DAYS.forEach(([k])=>{const d=state.days[k]; days[k]={blocks:d.blocks.map(({id,...b})=>b),base:d.base||null}});
-  try{localStorage.setItem(KEY,JSON.stringify({days,rules:state.rules,rulesV3:true,classLen:state.classLen,students:state.students,books:state.books}))}catch(e){}
+  try{localStorage.setItem(KEY,JSON.stringify({days,rules:state.rules,rulesV3:true,classLen:state.classLen,students:state.students,books:state.books,times:state.times}))}catch(e){}
 }
 function setBlocks(a){state.blocks=a; state.days[state.day].blocks=a}
 function setDay(k){
@@ -721,7 +725,7 @@ $('#copyTxt').onclick=async()=>{try{await navigator.clipboard.writeText($('#txt'
 $('#saveBase').onclick=()=>{state.days[state.day].base=toText(); save(); toast(`${dayName(state.day)}요일 기본 시간표로 저장했어요`)};
 $('#makeBackup').onclick=async()=>{
   save(); const days={}; DAYS.forEach(([k])=>{const d=state.days[k]; days[k]={blocks:d.blocks.map(({id,...b})=>b),base:d.base||null}});
-  const code=JSON.stringify({app:'class-board',v:3,days,rules:state.rules,classLen:state.classLen,students:state.students,books:state.books});
+  const code=JSON.stringify({app:'class-board',v:3,days,rules:state.rules,classLen:state.classLen,students:state.students,books:state.books,times:state.times});
   $('#backup').value=code;
   try{await navigator.clipboard.writeText(code);toast('백업 코드를 복사했어요')}catch(e){$('#backup').select();toast('코드를 선택해 두었어요. 직접 복사해 주세요')}
 };
@@ -731,7 +735,7 @@ $('#loadBackup').onclick=()=>{
   if(!d||d.app!=='class-board'||!(d.days||Array.isArray(d.blocks))){toast('이 앱의 백업 코드가 아니에요');return}
   if(!loadArm){loadArm=true;$('#loadBackup').textContent='지금 데이터를 덮어써요. 한 번 더 누르기';setTimeout(()=>{loadArm=false;$('#loadBackup').textContent='불러오기'},4000);return}
   loadArm=false;$('#loadBackup').textContent='불러오기';
-  state.rules=Object.assign({},DEFAULT_RULES,d.rules||{}); state.classLen=d.classLen||80; state.students=d.students||{}; state.books=d.books||{};
+  state.rules=Object.assign({},DEFAULT_RULES,d.rules||{}); state.classLen=d.classLen||80; state.students=d.students||{}; state.books=d.books||{}; state.times=d.times||{};
   const take=a=>(a||[]).map(b=>({...b,id:nid()}));
   if(d.days) DAYS.forEach(([k])=>{if(d.days[k]) state.days[k]={blocks:take(d.days[k].blocks),base:d.days[k].base||null}});
   else state.days[state.day]={blocks:take(d.blocks),base:d.base||null};
@@ -758,6 +762,7 @@ $('#classLen').onchange=()=>{const v=+$('#classLen').value; if(v>=20){state.clas
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('[data-view]').forEach(x=>x.setAttribute('aria-selected',x===b));
   ['now','grid','stu','set'].forEach(v=>$('#view-'+v).hidden=v!==b.dataset.view);
+  $('#alerts').hidden=b.dataset.view==='grid'; // 시간표 탭에서는 겹침 알림을 숨겨요
   if(b.dataset.view==='stu') renderStudents();
   if(b.dataset.view==='set') renderSettings();
   try{localStorage.setItem(KEY+'-tab',b.dataset.view)}catch(e){}
@@ -771,6 +776,7 @@ function classList(){
   const s=new Set(state.blocks.map(b=>b.cls).filter(c=>c&&c!=='청소'));
   Object.keys(state.students).forEach(c=>s.add(c));
   Object.keys(state.books).forEach(c=>s.add(c));
+  Object.keys(state.times).forEach(c=>s.add(c));
   return [...s].sort((a,b)=>classStart(a)-classStart(b)||natSort(a,b));
 }
 function renderStudents(){
@@ -786,6 +792,12 @@ function renderStudents(){
     return `<div class="card" id="stu-${esc(cls)}">
       <div class="shead"><h2>${esc(cls)}</h2><span class="hint">${list.length}명${nx?` · ${esc(roomLabel(nx.room))} ${fmt(bl[0].start)}–${fmt(bl[bl.length-1].end)}`:''}</span></div>
       <label class="books"><span>교재</span><textarea rows="2" data-books="${esc(cls)}" placeholder="한 줄에 한 권씩&#10;예: Reading Explorer 2" aria-label="${esc(cls)} 교재">${esc(books)}</textarea></label>
+      <div class="ttimes"><span class="lab">수업 시간</span>${DAYS.map(([k,n])=>{
+        const tm=(state.times[cls]||{})[k]||{}, bl=state.days[k].blocks.filter(b=>b.cls===cls);
+        const sch=bl.length?`시간표 ${fmt(Math.min(...bl.map(b=>b.start)))}–${fmt(Math.max(...bl.map(b=>b.end)))}`:'시간표에 없음';
+        const inp=(key,name)=>`<input type="time" value="${esc(tm[key]||'')}" data-tcls="${esc(cls)}" data-tday="${k}" data-tk="${key}" aria-label="${esc(cls)} ${n}요일 ${name}">`;
+        return `<b>${n}</b>${inp('s','시작')}<span>–</span>${inp('e','끝')}<span class="hint">${sch}</span>`;
+      }).join('')}</div>
       <table class="stbl"><thead><tr><th></th><th>한국 이름</th><th>영어 이름</th><th></th></tr></thead><tbody>
       ${list.map((st,i)=>`<tr ${match(st)?'':'hidden'}><td class="n">${i+1}</td>
         <td><input type="text" id="s-${esc(cls)}-${i}-ko" value="${esc(st.ko)}" data-cls="${esc(cls)}" data-i="${i}" data-k="ko" aria-label="한국 이름"></td>
@@ -810,6 +822,15 @@ $('#stu').addEventListener('change',e=>{
   const st=(state.students[el.dataset.cls]||[])[+el.dataset.i]; if(!st) return;
   st[el.dataset.k]=el.value.trim(); save();
 });
+// 반별 수업 시간 기록 (시간표 블록과는 따로 저장해요)
+$('#stu').addEventListener('change',e=>{
+  const el=e.target; if(el.dataset.tcls==null) return;
+  const c=el.dataset.tcls, k=el.dataset.tday, T=(state.times[c]=state.times[c]||{}), d=(T[k]=T[k]||{});
+  if(el.value) d[el.dataset.tk]=el.value; else delete d[el.dataset.tk];
+  if(!d.s&&!d.e) delete T[k];
+  if(!Object.keys(T).length) delete state.times[c];
+  save();
+});
 // 교재는 입력하는 대로 저장해요 (입력 중에 앱을 닫아도 남도록)
 $('#stu').addEventListener('input',e=>{
   const el=e.target; if(el.dataset.books==null) return;
@@ -829,7 +850,7 @@ $('#stu').addEventListener('click',e=>{
     (state.students[d.bulkAdd]=state.students[d.bulkAdd]||[]).push(...rows); save(); renderStudents(); toast(`${rows.length}명 추가했어요`);
   }
   else if(d.delClass!=null){
-    if(b.dataset.armed){delete state.students[d.delClass]; delete state.books[d.delClass]; save(); renderStudents(); toast('반을 삭제했어요')}
+    if(b.dataset.armed){delete state.students[d.delClass]; delete state.books[d.delClass]; delete state.times[d.delClass]; save(); renderStudents(); toast('반을 삭제했어요')}
     else{b.dataset.armed='1'; b.textContent='한 번 더 누르면 삭제'; setTimeout(()=>{if(b.isConnected){delete b.dataset.armed; b.textContent='반 삭제'}},4000)}
   }
 });
