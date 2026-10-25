@@ -336,7 +336,7 @@ input,select,textarea{font-size:16px}
           <button class="btn" id="loadBackup">불러오기</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">앱 버전: 숙제 검사 체크 (10월 25일)</p>
+      <p class="hint" style="margin:0">앱 버전: 숙제 먼저 보기 (10월 25일)</p>
       <div class="card">
         <h2>활동별 기기</h2>
         <p>활동 코드마다 노트북·아이패드가 필요한지 정해 두면, 같은 기기를 동시에 쓰는 블록을 찾아 빨간색으로 표시해요. 줌 수업(코드에 409가 들어간 활동)은 이 표와 상관없이 항상 노트북을, M반 리스닝은 항상 아이패드를 써요. 기기 규칙과 학생 명단은 월·수·금 모두 같이 써요.</p>
@@ -792,7 +792,7 @@ function classList(){
   Object.keys(state.times).forEach(c=>s.add(c));
   return [...s].sort((a,b)=>classStart(a)-classStart(b)||natSort(a,b));
 }
-// 숙제 검사: 학생마다 hw:{w,s,r,t} (체크한 것만 true). 반마다 명단/숙제 보기 전환
+// 숙제 검사: 학생마다 hw:{w,s,r,t} (체크한 것만 true). 반마다 숙제/명단 보기 전환 (처음엔 숙제)
 const HW=[['w','단어쓰기'],['s','문장쓰기'],['r','녹음'],['t','단어재시험']];
 const stuMode={};
 const hwDone=(list,k)=>`${list.filter(st=>st.hw&&st.hw[k]).length}/${list.length}`;
@@ -816,8 +816,8 @@ function renderStudents(){
     const nx=bl.find(b=>b.end>t)||bl[0];
     return `<div class="card" id="stu-${esc(cls)}">
       <div class="shead"><h2>${esc(cls)}</h2><span class="hint">${list.length}명${nx?` · ${esc(roomLabel(nx.room))} ${fmt(bl[0].start)}–${fmt(bl[bl.length-1].end)}`:''}</span>
-        <div class="tabs mini">${[['list','명단'],['hw','숙제']].map(([m,n])=>`<button data-mode="${m}" data-mcls="${esc(cls)}" aria-selected="${(stuMode[cls]||'list')===m}">${n}</button>`).join('')}</div></div>
-      ${stuMode[cls]==='hw'?hwTable(cls,list,match):`<label class="books"><span>교재</span><textarea rows="2" data-books="${esc(cls)}" placeholder="한 줄에 한 권씩&#10;예: Reading Explorer 2" aria-label="${esc(cls)} 교재">${esc(books)}</textarea></label>
+        <div class="tabs mini">${[['hw','숙제'],['list','명단']].map(([m,n])=>`<button data-mode="${m}" data-mcls="${esc(cls)}" aria-selected="${(stuMode[cls]||'hw')===m}">${n}</button>`).join('')}</div></div>
+      ${(stuMode[cls]||'hw')==='hw'?hwTable(cls,list,match):`<label class="books"><span>교재</span><textarea rows="2" data-books="${esc(cls)}" placeholder="한 줄에 한 권씩&#10;예: Reading Explorer 2" aria-label="${esc(cls)} 교재">${esc(books)}</textarea></label>
       <div class="ttimes"><span class="lab">수업 시간</span>${DAYS.map(([k,n])=>{
         const tm=(state.times[cls]||{})[k]||{}, bl=state.days[k].blocks.filter(b=>b.cls===cls);
         const sch=bl.length?`시간표 ${fmt(Math.min(...bl.map(b=>b.start)))}–${fmt(Math.max(...bl.map(b=>b.end)))}`:'시간표에 없음';
