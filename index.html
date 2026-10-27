@@ -107,6 +107,11 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .ttimes .lab{grid-column:1/-1;font-size:12px;color:var(--muted);font-weight:600}
 .ttimes input{-webkit-appearance:none;appearance:none;min-width:0;width:100%;min-height:36px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 8px;text-align:left}
 .ttimes .hint{grid-column:2/-1;font-size:12px;margin:-2px 0 4px}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.acts .lab{flex-basis:100%;font-size:12px;color:var(--muted);font-weight:600}
+.acts label{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);cursor:pointer;font-size:14px}
+.acts input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
+.acts label.on{opacity:.55;text-decoration:line-through}
 .shead .tabs.mini{margin-left:auto;padding:2px}
 .tabs.mini button{padding:4px 12px;font-size:13px}
 .hwtbl{width:100%;border-collapse:collapse;table-layout:fixed;margin:6px 0 10px}
@@ -336,7 +341,7 @@ input,select,textarea{font-size:16px}
           <button class="btn" id="loadBackup">불러오기</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">앱 버전: 숙제 먼저 보기 (10월 25일)</p>
+      <p class="hint" style="margin:0">앱 버전: 수업 체크·시간 숫자 입력 (10월 27일)</p>
       <div class="card">
         <h2>활동별 기기</h2>
         <p>활동 코드마다 노트북·아이패드가 필요한지 정해 두면, 같은 기기를 동시에 쓰는 블록을 찾아 빨간색으로 표시해요. 줌 수업(코드에 409가 들어간 활동)은 이 표와 상관없이 항상 노트북을, M반 리스닝은 항상 아이패드를 써요. 기기 규칙과 학생 명단은 월·수·금 모두 같이 써요.</p>
@@ -483,7 +488,7 @@ function toText(){
 
 function load(){
   let s=null; try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
-  const st={days:{},rules:Object.assign({},DEFAULT_RULES,(s&&s.rules)||{}),classLen:(s&&s.classLen)||80,students:(s&&s.students)||{},books:(s&&s.books)||{},times:(s&&s.times)||{}};
+  const st={days:{},rules:Object.assign({},DEFAULT_RULES,(s&&s.rules)||{}),classLen:(s&&s.classLen)||80,students:(s&&s.students)||{},books:(s&&s.books)||{},times:(s&&s.times)||{},done:(s&&s.done)||{}};
   if(!(s&&s.rulesV3)) st.rules.r='laptop';
   const take=a=>(a||[]).map(b=>({...b,id:nid()}));
   DAYS.forEach(([k])=>{
@@ -497,7 +502,7 @@ function load(){
 function save(){
   state.days[state.day].blocks=state.blocks;
   const days={}; DAYS.forEach(([k])=>{const d=state.days[k]; days[k]={blocks:d.blocks.map(({id,...b})=>b),base:d.base||null}});
-  try{localStorage.setItem(KEY,JSON.stringify({days,rules:state.rules,rulesV3:true,classLen:state.classLen,students:state.students,books:state.books,times:state.times}))}catch(e){}
+  try{localStorage.setItem(KEY,JSON.stringify({days,rules:state.rules,rulesV3:true,classLen:state.classLen,students:state.students,books:state.books,times:state.times,done:state.done}))}catch(e){}
 }
 function setBlocks(a){state.blocks=a; state.days[state.day].blocks=a}
 function setDay(k){
@@ -738,7 +743,7 @@ $('#copyTxt').onclick=async()=>{try{await navigator.clipboard.writeText($('#txt'
 $('#saveBase').onclick=()=>{state.days[state.day].base=toText(); save(); toast(`${dayName(state.day)}요일 기본 시간표로 저장했어요`)};
 $('#makeBackup').onclick=async()=>{
   save(); const days={}; DAYS.forEach(([k])=>{const d=state.days[k]; days[k]={blocks:d.blocks.map(({id,...b})=>b),base:d.base||null}});
-  const code=JSON.stringify({app:'class-board',v:3,days,rules:state.rules,classLen:state.classLen,students:state.students,books:state.books,times:state.times});
+  const code=JSON.stringify({app:'class-board',v:3,days,rules:state.rules,classLen:state.classLen,students:state.students,books:state.books,times:state.times,done:state.done});
   $('#backup').value=code;
   try{await navigator.clipboard.writeText(code);toast('백업 코드를 복사했어요')}catch(e){$('#backup').select();toast('코드를 선택해 두었어요. 직접 복사해 주세요')}
 };
@@ -748,7 +753,7 @@ $('#loadBackup').onclick=()=>{
   if(!d||d.app!=='class-board'||!(d.days||Array.isArray(d.blocks))){toast('이 앱의 백업 코드가 아니에요');return}
   if(!loadArm){loadArm=true;$('#loadBackup').textContent='지금 데이터를 덮어써요. 한 번 더 누르기';setTimeout(()=>{loadArm=false;$('#loadBackup').textContent='불러오기'},4000);return}
   loadArm=false;$('#loadBackup').textContent='불러오기';
-  state.rules=Object.assign({},DEFAULT_RULES,d.rules||{}); state.classLen=d.classLen||80; state.students=d.students||{}; state.books=d.books||{}; state.times=d.times||{};
+  state.rules=Object.assign({},DEFAULT_RULES,d.rules||{}); state.classLen=d.classLen||80; state.students=d.students||{}; state.books=d.books||{}; state.times=d.times||{}; state.done=d.done||{};
   const take=a=>(a||[]).map(b=>({...b,id:nid()}));
   if(d.days) DAYS.forEach(([k])=>{if(d.days[k]) state.days[k]={blocks:take(d.days[k].blocks),base:d.days[k].base||null}});
   else state.days[state.day]={blocks:take(d.blocks),base:d.base||null};
@@ -804,6 +809,33 @@ function hwTable(cls,list,match){
     </tbody><tfoot><tr><td>완료</td>${HW.map(([k])=>`<td data-done="${k}">${hwDone(list,k)}</td>`).join('')}</tr></tfoot></table>
     <div class="row"><button class="btn sm danger" data-hw-clear="${esc(cls)}">체크 비우기</button></div>`;
 }
+// 수업 체크: done={date, c:{'요일|반':{활동:true}}}. 날짜가 바뀌면 빈 것으로 봐요
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const doneOf=key=>{const D=state.done; return (D&&D.date===today()&&D.c&&D.c[key])||{}};
+function actKeys(bl){const n={}; return bl.map(b=>{const a=b.act||'수업'; n[a]=(n[a]||0)+1; return n[a]>1?a+'#'+n[a]:a})}
+function doneRow(cls){
+  const bl=state.blocks.filter(b=>b.cls===cls).sort(byStart); if(!bl.length) return '';
+  const key=state.day+'|'+cls, D=doneOf(key), ks=actKeys(bl);
+  return `<div class="acts" data-acts="${esc(cls)}"><span class="lab">${state.day===todayKey()?'오늘':dayName(state.day)+'요일'} 수업 체크</span>${bl.map((b,i)=>`<label class="${D[ks[i]]?'on':''}"><input type="checkbox" data-dkey="${esc(key)}" data-act="${esc(ks[i])}" ${D[ks[i]]?'checked':''}><span class="num">${fmt(b.start)}</span> ${esc(label(b.act)||b.act||'수업')}</label>`).join('')}</div>`;
+}
+// 수업 시간 입력: 230 → 2:30, 1415 → 2:15 (1–9시는 오후)
+function parseHM(s){
+  s=s.trim(); let h,m; const x=s.match(/^(\d{1,2})[:;.](\d{2})$/);
+  if(x){h=+x[1];m=+x[2]}
+  else if(/^\d{1,4}$/.test(s)){if(s.length<=2){h=+s;m=0}else{h=+s.slice(0,-2);m=+s.slice(-2)}}
+  else return null;
+  if(h<10) h+=12;
+  return h>23||m>59?null:h*60+m;
+}
+function tval(cls,k,key){
+  const bl=state.days[k].blocks.filter(b=>b.cls===cls);
+  if(bl.length) return fmt(key==='s'?Math.min(...bl.map(b=>b.start)):Math.max(...bl.map(b=>b.end)));
+  const v=((state.times[cls]||{})[k]||{})[key]; return v?fmt(from24(v)):'';
+}
+function schedHint(cls,n){
+  const bl=state.blocks.filter(b=>b.cls===cls).sort(byStart), t=nowMin(), nx=bl.find(b=>b.end>t)||bl[0];
+  return `${n}명${nx?` · ${roomLabel(nx.room)} ${fmt(bl[0].start)}–${fmt(Math.max(...bl.map(b=>b.end)))}`:''}`;
+}
 function renderStudents(){
   const q=$('#stuSearch').value.trim().toLowerCase(), t=nowMin();
   const inSched=new Set(state.blocks.map(b=>b.cls));
@@ -812,16 +844,14 @@ function renderStudents(){
     const match=st=>!q||(st.ko+' '+st.en).toLowerCase().includes(q);
     const books=state.books[cls]||'';
     if(q&&!list.some(match)&&!cls.toLowerCase().includes(q)&&!books.toLowerCase().includes(q)) return '';
-    const bl=state.blocks.filter(b=>b.cls===cls).sort(byStart);
-    const nx=bl.find(b=>b.end>t)||bl[0];
     return `<div class="card" id="stu-${esc(cls)}">
-      <div class="shead"><h2>${esc(cls)}</h2><span class="hint">${list.length}명${nx?` · ${esc(roomLabel(nx.room))} ${fmt(bl[0].start)}–${fmt(bl[bl.length-1].end)}`:''}</span>
+      <div class="shead"><h2>${esc(cls)}</h2><span class="hint" data-shint>${esc(schedHint(cls,list.length))}</span>
         <div class="tabs mini">${[['hw','숙제'],['list','명단']].map(([m,n])=>`<button data-mode="${m}" data-mcls="${esc(cls)}" aria-selected="${(stuMode[cls]||'hw')===m}">${n}</button>`).join('')}</div></div>
+      ${doneRow(cls)}
       ${(stuMode[cls]||'hw')==='hw'?hwTable(cls,list,match):`<label class="books"><span>교재</span><textarea rows="2" data-books="${esc(cls)}" placeholder="한 줄에 한 권씩&#10;예: Reading Explorer 2" aria-label="${esc(cls)} 교재">${esc(books)}</textarea></label>
       <div class="ttimes"><span class="lab">수업 시간</span>${DAYS.map(([k,n])=>{
-        const tm=(state.times[cls]||{})[k]||{}, bl=state.days[k].blocks.filter(b=>b.cls===cls);
-        const sch=bl.length?`시간표 ${fmt(Math.min(...bl.map(b=>b.start)))}–${fmt(Math.max(...bl.map(b=>b.end)))}`:'시간표에 없음';
-        const inp=(key,name)=>`<input type="time" value="${esc(tm[key]||'')}" data-tcls="${esc(cls)}" data-tday="${k}" data-tk="${key}" aria-label="${esc(cls)} ${n}요일 ${name}">`;
+        const sch=state.days[k].blocks.some(b=>b.cls===cls)?'시간표에 바로 반영돼요':'시간표에 없음';
+        const inp=(key,name)=>`<input type="text" inputmode="numeric" autocomplete="off" placeholder="${key==='s'?'2:30':'4:00'}" value="${tval(cls,k,key)}" data-tcls="${esc(cls)}" data-tday="${k}" data-tk="${key}" aria-label="${esc(cls)} ${n}요일 ${name}">`;
         return `<b>${n}</b>${inp('s','시작')}<span>–</span>${inp('e','끝')}<span class="hint">${sch}</span>`;
       }).join('')}</div>
       <table class="stbl"><thead><tr><th></th><th>한국 이름</th><th>영어 이름</th><th></th></tr></thead><tbody>
@@ -856,14 +886,41 @@ $('#stu').addEventListener('change',e=>{
   save();
   const td=el.closest('table').querySelector(`[data-done="${el.dataset.hw}"]`); if(td) td.textContent=hwDone(list,el.dataset.hw);
 });
-// 반별 수업 시간 기록 (시간표 블록과는 따로 저장해요)
+// 반별 수업 시간: 그 요일 시간표에 반이 있으면 블록을 바로 옮기고(시작은 통째로, 끝은 마지막 블록만), 없으면 times에 기록만 해요
 $('#stu').addEventListener('change',e=>{
   const el=e.target; if(el.dataset.tcls==null) return;
-  const c=el.dataset.tcls, k=el.dataset.tday, T=(state.times[c]=state.times[c]||{}), d=(T[k]=T[k]||{});
-  if(el.value) d[el.dataset.tk]=el.value; else delete d[el.dataset.tk];
+  const c=el.dataset.tcls, k=el.dataset.tday, key=el.dataset.tk, v=el.value.trim(), m=v?parseHM(v):null;
+  const all=state.days[k].blocks, bl=all.filter(b=>b.cls===c).sort(byStart);
+  const back=msg=>{el.value=tval(c,k,key); if(msg) toast(msg)};
+  if(v&&m==null) return back('예: 230 → 2:30');
+  if(bl.length){
+    if(m==null) return back('');
+    if(key==='s'){const d=m-bl[0].start; bl.forEach(b=>{b.start+=d;b.end+=d})}
+    else{const last=bl.reduce((a,b)=>b.end>a.end?b:a); if(m<=last.start) return back('끝 시간이 너무 빨라요'); last.end=m}
+    if(state.times[c]){delete state.times[c][k]; if(!Object.keys(state.times[c]).length) delete state.times[c]}
+    const hit=all.find(o=>o.cls!==c&&bl.some(b=>b.room===o.room&&b.start<o.end&&o.start<b.end));
+    save(); render();
+    // 카드를 통째로 다시 그리면 다음 칸으로 옮긴 커서가 사라져서, 바뀐 부분만 고쳐요
+    const card=el.closest('.card');
+    card.querySelectorAll(`[data-tday="${k}"]`).forEach(x=>{if(x!==document.activeElement) x.value=tval(c,k,x.dataset.tk)}); el.value=tval(c,k,key);
+    card.querySelector('[data-shint]').textContent=schedHint(c,(state.students[c]||[]).length);
+    const a=card.querySelector('[data-acts]'); if(a) a.outerHTML=doneRow(c);
+    toast(hit?`${roomLabel(hit.room)} ${hit.cls} 수업과 겹쳐요`:`${dayName(k)}요일 ${c} ${tval(c,k,'s')}–${tval(c,k,'e')}로 바꿨어요`);
+    return;
+  }
+  const T=(state.times[c]=state.times[c]||{}), d=(T[k]=T[k]||{});
+  if(m!=null) d[key]=to24(m); else delete d[key];
   if(!d.s&&!d.e) delete T[k];
   if(!Object.keys(T).length) delete state.times[c];
-  save();
+  save(); el.value=m!=null?fmt(m):'';
+});
+$('#stu').addEventListener('change',e=>{
+  const el=e.target; if(el.dataset.dkey==null) return;
+  const t=today(); if(!state.done||state.done.date!==t) state.done={date:t,c:{}};
+  const C=state.done.c, M=(C[el.dataset.dkey]=C[el.dataset.dkey]||{});
+  if(el.checked) M[el.dataset.act]=true; else delete M[el.dataset.act];
+  if(!Object.keys(M).length) delete C[el.dataset.dkey];
+  save(); el.closest('label').classList.toggle('on',el.checked);
 });
 // 교재는 입력하는 대로 저장해요 (입력 중에 앱을 닫아도 남도록)
 $('#stu').addEventListener('input',e=>{
