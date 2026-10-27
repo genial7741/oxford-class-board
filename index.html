@@ -18,7 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: sticky clock bar + tabs; "지금" = room cards + device status; "시간표" = rooms × minutes grid with laptop/iPad lanes */
+/* Layout: sticky clock bar + tabs; "수업 체크" = per-class activity checkboxes; "시간표" = rooms × minutes grid with laptop/iPad lanes */
 :root{
   --bg:#f2f4f6; --surface:#ffffff; --ink:#17222c; --muted:#5b6976; --line:#d6dde4; --line-soft:#e7ecf0;
   --accent:#0e6a6c; --accent-ink:#ffffff;
@@ -107,11 +107,16 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .ttimes .lab{grid-column:1/-1;font-size:12px;color:var(--muted);font-weight:600}
 .ttimes input{-webkit-appearance:none;appearance:none;min-width:0;width:100%;min-height:36px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 8px;text-align:left}
 .ttimes .hint{grid-column:2/-1;font-size:12px;margin:-2px 0 4px}
-.acts{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
-.acts .lab{flex-basis:100%;font-size:12px;color:var(--muted);font-weight:600}
-.acts label{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);cursor:pointer;font-size:14px}
-.acts input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
-.acts label.on{opacity:.55;text-decoration:line-through}
+.chks{display:flex;flex-direction:column;gap:12px}
+.chk .chead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chk .chead h2{margin:0}
+.chk .chead .cnt{margin-left:auto;font-family:var(--f-num);font-size:14px;color:var(--muted)}
+.chk.all .chead .cnt{color:var(--accent);font-weight:700}
+.chk.live{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.chk .items{display:flex;flex-wrap:wrap;gap:6px}
+.chk label{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);cursor:pointer;font-size:15px}
+.chk input{width:22px;height:22px;margin:0;accent-color:var(--accent)}
+.chk label.on{opacity:.55;text-decoration:line-through}
 .shead .tabs.mini{margin-left:auto;padding:2px}
 .tabs.mini button{padding:4px 12px;font-size:13px}
 .hwtbl{width:100%;border-collapse:collapse;table-layout:fixed;margin:6px 0 10px}
@@ -130,42 +135,11 @@ main{padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
 .btn.line{background:transparent;color:var(--accent);border:1px solid var(--accent)}
 .btn.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
 
-/* now view */
-.rooms{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
-.room{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
-.room.soon{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn-bg)}
-.room.bad{border-color:var(--bad);box-shadow:0 0 0 2px var(--bad-bg)}
-.rhead{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--muted)}
-.rhead b{color:var(--ink);font-size:14px}
-.cur{padding:12px 14px 10px;display:flex;flex-direction:column;gap:4px}
-.ccls{font-weight:700;font-size:15px}
-.cact{font-size:26px;font-weight:700;line-height:1.2;letter-spacing:-.02em}
-.ccode{font-family:var(--f-num);font-size:12px;color:var(--muted)}
-.bar{height:6px;border-radius:3px;background:var(--line-soft);overflow:hidden;margin-top:6px}
-.bar i{display:block;height:100%;background:var(--ink);opacity:.55}
-.remain{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px}
-.remain b{font-family:var(--f-num);font-size:18px}
-.idle{padding:22px 14px;color:var(--muted)}
-.next{padding:10px 14px;border-top:1px solid var(--line-soft);font-size:14px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
-.next .lab{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em}
-.acts{display:flex;gap:6px;padding:0 14px 12px;flex-wrap:wrap}
-.acts .ghost{flex:1}
+/* 수업 체크 view */
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
 .chip.laptop{color:var(--laptop)} .chip.ipad{color:var(--ipad)} .chip.native{color:var(--native)}
 .c-wt{background:var(--c-wt)} .c-sp{background:var(--c-sp)} .c-r{background:var(--c-r)} .c-l{background:var(--c-l)} .c-gr{background:var(--c-gr)} .c-wb{background:var(--c-wb)} .c-etc{background:var(--c-etc)} .c-nat{background:var(--c-nat)} .c-zoom{background:var(--c-zoom)}
 
-.devs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
-.dev{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-.dev.bad{border-color:var(--bad);background:var(--bad-bg)}
-.dev h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
-.dev h3 .sw{width:10px;height:10px;border-radius:3px}
-.dstate{font-size:20px;font-weight:700;letter-spacing:-.01em}
-.handoff{font-size:14px;padding:8px 10px;border-radius:8px;background:var(--bg)}
-.handoff.tight{background:var(--warn-bg);color:var(--warn);font-weight:600}
-.uses{display:flex;flex-wrap:wrap;gap:4px}
-.uses span{font-size:12px;font-family:var(--f-num);padding:1px 6px;border-radius:5px;background:var(--bg);border:1px solid var(--line-soft)}
-.uses span.past{opacity:.45}
-.uses span.live{border-color:var(--ink);font-weight:600}
 .sect-h{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em;margin:4px 0 -6px}
 
 /* grid view */
@@ -251,7 +225,6 @@ input,select,textarea{font-size:16px}
   .dact .row{justify-content:space-between}
   .dact .row .btn,.dact .row .ghost{flex:1;padding-block:10px}
 }
-@media (prefers-reduced-motion:no-preference){.room.soon{animation:pulse 1.6s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 0 5px var(--warn-bg)}}}
 </style>
 
 </head>
@@ -268,7 +241,7 @@ input,select,textarea{font-size:16px}
     <div class="tabs" id="days" aria-label="요일"></div>
     <div class="tabs" role="tablist">
       <button role="tab" data-view="grid" aria-selected="true">시간표</button>
-      <button role="tab" data-view="now" aria-selected="false">지금</button>
+      <button role="tab" data-view="chk" aria-selected="false">수업 체크</button>
       <button role="tab" data-view="stu" aria-selected="false">학생</button>
       <button role="tab" data-view="set" aria-selected="false">편집·설정</button>
     </div>
@@ -278,13 +251,8 @@ input,select,textarea{font-size:16px}
 <main class="gut">
   <div id="alerts" hidden></div>
 
-  <section id="view-now" hidden>
-    <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="sect-h">방별 진행</div>
-      <div class="rooms" id="rooms"></div>
-      <div class="sect-h">기기</div>
-      <div class="devs" id="devs"></div>
-    </div>
+  <section id="view-chk" hidden>
+    <div class="chks" id="chk"></div>
   </section>
 
   <section id="view-grid">
@@ -341,7 +309,7 @@ input,select,textarea{font-size:16px}
           <button class="btn" id="loadBackup">불러오기</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">앱 버전: 수업 체크·시간 숫자 입력 (10월 27일)</p>
+      <p class="hint" style="margin:0">앱 버전: 수업 체크 탭 (10월 27일)</p>
       <div class="card">
         <h2>활동별 기기</h2>
         <p>활동 코드마다 노트북·아이패드가 필요한지 정해 두면, 같은 기기를 동시에 쓰는 블록을 찾아 빨간색으로 표시해요. 줌 수업(코드에 409가 들어간 활동)은 이 표와 상관없이 항상 노트북을, M반 리스닝은 항상 아이패드를 써요. 기기 규칙과 학생 명단은 월·수·금 모두 같이 써요.</p>
@@ -560,7 +528,7 @@ function render(){
   if(document.activeElement!==$('#simTime')) $('#simTime').value=to24(t);
   const cs=conflicts();
   const bd=$('#badge'); bd.textContent=cs.length?`기기 겹침 ${cs.length}`:'겹침 없음'; bd.className='badge'+(cs.length?'':' ok');
-  renderAlerts(cs); renderNow(cs); renderGrid(cs);
+  renderAlerts(cs); renderGrid(cs); renderChecks();
 }
 function isHard(b,dev){return dev==='native'||b.dev===dev||(dev==='laptop'&&ZOOM.test(b.act))||(dev==='ipad'&&isLocked(b))}
 function renderAlerts(cs){
@@ -569,61 +537,6 @@ function renderAlerts(cs){
   $('#alerts').innerHTML=`<details class="alert" ${alertsOpen?'open':''}><summary><h2>${dayName(state.day)}요일 · 같은 기기나 원어민 선생님이 동시에 필요한 블록 ${cs.length}건</h2></summary><ul>${cs.map(c=>`<li style="display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center"><b>${DEVN[c.dev]}</b> ${item(c.a,c.dev)} <span class="hint">/</span> ${item(c.b,c.dev)}</li>`).join('')}</ul><span class="hint">줌 수업과 M반 리스닝은 기기가 꼭 필요해서 「필수」로 표시해요. 나머지는 이번 수업만 기기 없이 진행하도록 바꿀 수 있고, 블록 이름을 누르면 시간이나 기기를 고칠 수 있어요.</span></details>`;
   $('#alerts .alert').addEventListener('toggle',e=>{alertsOpen=e.target.open; try{localStorage.setItem('class-board-v2-alerts',alertsOpen?'open':'closed')}catch(_){}});
   $('#alerts').querySelectorAll('[data-release]').forEach(btn=>btn.onclick=()=>{const b=state.blocks.find(x=>x.id===btn.dataset.release); if(!b)return; b.dev='none'; save(); render(); toast(`${b.cls} ${label(b.act)}: 기기 없이 진행`)});
-}
-function devChips(b){return resOf(b).map(d=>`<span class="chip ${d}">${DEVN[d]}</span>`).join('')+(isLocked(b)?'<span class="chip" style="color:var(--muted)">고정</span>':'')}
-function renderNow(cs){
-  const t=nowMin(); const bad=new Set(); cs.forEach(c=>{bad.add(c.a.id);bad.add(c.b.id)});
-  const rooms=roomList();
-  if(!rooms.length){$('#rooms').innerHTML='<p class="empty">시간표가 비어 있어요.</p>';$('#devs').innerHTML='';return}
-  $('#rooms').innerHTML=rooms.map(r=>{
-    const list=state.blocks.filter(b=>b.room===r).sort(byStart);
-    const cur=list.find(b=>b.start<=t&&t<b.end);
-    const nx=list.find(b=>b.start>t&&b!==cur);
-    const rem=cur?cur.end-t:0, soon=cur&&rem<=2;
-    const pct=cur?Math.round((t-cur.start)/(cur.end-cur.start)*100):0;
-    const isBad=cur&&bad.has(cur.id);
-    const clsEnd=cur&&cur.cls?Math.max(...list.filter(b=>b.cls===cur.cls).map(b=>b.end)):null;
-    return `<article class="room ${soon?'soon':''} ${isBad?'bad':''}">
-      <div class="rhead"><b>${esc(roomLabel(r))}</b><span class="num">${cur?`${esc(cur.cls)} 수업 ~${fmt(clsEnd)}`:''}${cur&&cur.cls&&cur.cls!=='청소'?` · <button class="link" data-stu="${esc(cur.cls)}">학생 ${(state.students[cur.cls]||[]).length}명</button>`:''}</span></div>
-      ${cur?`<div class="cur edit ${colorClass(cur)}" data-edit="${cur.id}" title="눌러서 수정">
-          <div class="ccls">${esc(cur.cls)}</div>
-          <div class="cact">${esc(label(cur.act)||cur.cls)}</div>
-          <div class="ccode">${esc(cur.act)} · ${fmt(cur.start)}–${fmt(cur.end)}</div>
-          <div class="bar"><i style="width:${pct}%"></i></div>
-          <div class="remain"><span><b>${rem}</b>분 남음</span>${devChips(cur)}</div>
-        </div>`:`<div class="idle">지금은 비어 있어요</div>`}
-      <div class="next ${nx?'edit':''}" ${nx?`data-edit="${nx.id}" title="눌러서 수정"`:''}>${nx?`<span class="lab">다음</span><span class="num">${fmt(nx.start)}</span><b>${esc(nx.cls)}</b> ${esc(label(nx.act))} ${devChips(nx)}<span class="hint">${nx.start-t}분 후</span>`:`<span class="hint">오늘 남은 블록 없음</span>`}</div>
-      ${cur&&cur.cls&&cur.cls!=='청소'?`<div class="acts"><button class="ghost" data-shift="${esc(cur.cls)}" data-d="-5">−5분 당기기</button><button class="ghost" data-shift="${esc(cur.cls)}" data-d="5">+5분 밀기</button></div>`:''}
-    </article>`;
-  }).join('');
-  $('#rooms').querySelectorAll('[data-shift]').forEach(b=>b.onclick=()=>shiftClass(b.dataset.shift,+b.dataset.d));
-
-  $('#devs').innerHTML=RES.map(dev=>{
-    const u=state.blocks.filter(b=>resOf(b).includes(dev)).sort(byStart);
-    const cur=u.filter(b=>b.start<=t&&t<b.end);
-    const nx=u.find(b=>b.start>t&&!cur.includes(b));
-    const prev=[...u].reverse().find(b=>b.end<=t);
-    let st, ho='';
-    if(cur.length>1) st=`<div class="dstate" style="color:var(--bad)">겹침 — ${cur.map(b=>esc(b.cls)).join(', ')}가 동시에 필요</div>`;
-    else if(cur.length) st=`<div class="dstate">${esc(roomLabel(cur[0].room))} · ${esc(cur[0].cls)} ${esc(label(cur[0].act))}</div><div class="hint">${fmt(cur[0].end)}까지 사용</div>`;
-    else st=`<div class="dstate" style="color:var(--muted)">비어 있음${prev?` · ${esc(roomLabel(prev.room))}에 있음`:''}</div>`;
-    if(nx){
-      const from=cur[0]||prev, gap=from?nx.start-from.end:null, move=from&&from.room!==nx.room;
-      const tight=move&&gap!==null&&gap<=2;
-      ho=`<div class="handoff ${tight?'tight':''}">다음 <span class="num">${fmt(nx.start)}</span> ${esc(nx.cls)} ${esc(label(nx.act))}${move?` — <b>${esc(roomLabel(from.room))} → ${esc(roomLabel(nx.room))}</b>로 옮기기`:` (${esc(roomLabel(nx.room))})`}${gap!==null&&move?` · ${gap<=0?'쉬는 틈 없이 바로 넘겨야 해요':gap+'분 여유'}`:''}</div>`;
-    } else ho=`<div class="handoff">오늘 더 쓸 일 없음</div>`;
-    const isBad=cs.some(c=>c.dev===dev);
-    return `<div class="dev ${cur.length>1?'bad':''}"><h3><i class="sw" style="background:var(--${dev})"></i>${DEVN[dev]}${isBad?' <span class="badge">겹침 있음</span>':''}</h3>${st}${ho}
-      <div class="uses">${u.map(b=>`<span class="${b.end<=t?'past':''} ${b.start<=t&&t<b.end?'live':''}">${fmt(b.start)} ${esc(b.cls)}·${esc(b.room)}</span>`).join('')||'<span class="hint">해당하는 블록이 없어요</span>'}</div></div>`;
-  }).join('');
-}
-function shiftClass(cls,d){
-  const t=nowMin();
-  state.blocks.filter(b=>b.cls===cls).forEach(b=>{
-    if(b.start<=t&&b.end>t) b.end=Math.max(b.start+5,b.end+d);
-    else if(b.start>t){b.start+=d;b.end+=d}
-  });
-  save(); render(); toast(`${cls} 남은 일정 ${d>0?'+':''}${d}분`);
 }
 
 function renderGrid(cs){
@@ -779,7 +692,7 @@ $('#classLen').onchange=()=>{const v=+$('#classLen').value; if(v>=20){state.clas
 /* ---------- tabs, time ---------- */
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('[data-view]').forEach(x=>x.setAttribute('aria-selected',x===b));
-  ['now','grid','stu','set'].forEach(v=>$('#view-'+v).hidden=v!==b.dataset.view);
+  ['chk','grid','stu','set'].forEach(v=>$('#view-'+v).hidden=v!==b.dataset.view);
   $('#alerts').hidden=b.dataset.view==='grid'; // 시간표 탭에서는 겹침 알림을 숨겨요
   if(b.dataset.view==='stu') renderStudents();
   if(b.dataset.view==='set') renderSettings();
@@ -813,10 +726,21 @@ function hwTable(cls,list,match){
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
 const doneOf=key=>{const D=state.done; return (D&&D.date===today()&&D.c&&D.c[key])||{}};
 function actKeys(bl){const n={}; return bl.map(b=>{const a=b.act||'수업'; n[a]=(n[a]||0)+1; return n[a]>1?a+'#'+n[a]:a})}
-function doneRow(cls){
-  const bl=state.blocks.filter(b=>b.cls===cls).sort(byStart); if(!bl.length) return '';
-  const key=state.day+'|'+cls, D=doneOf(key), ks=actKeys(bl);
-  return `<div class="acts" data-acts="${esc(cls)}"><span class="lab">${state.day===todayKey()?'오늘':dayName(state.day)+'요일'} 수업 체크</span>${bl.map((b,i)=>`<label class="${D[ks[i]]?'on':''}"><input type="checkbox" data-dkey="${esc(key)}" data-act="${esc(ks[i])}" ${D[ks[i]]?'checked':''}><span class="num">${fmt(b.start)}</span> ${esc(label(b.act)||b.act||'수업')}</label>`).join('')}</div>`;
+// 수업 체크 탭: 선택한 요일 시간표의 반마다 활동을 체크해요. 다시 그릴 때 체크 칸에 커서가 없으니 15초마다 다시 그려도 괜찮아요
+function renderChecks(){
+  const el=$('#chk'); if(!el) return;
+  const t=nowMin(), classes=[...new Set(state.blocks.map(b=>b.cls).filter(c=>c&&c!=='청소'))].sort((a,b)=>classStart(a)-classStart(b)||natSort(a,b));
+  if(!classes.length){el.innerHTML='<p class="empty">시간표가 비어 있어요.</p>';return}
+  const lab=state.day===todayKey()?'오늘':dayName(state.day)+'요일';
+  el.innerHTML=`<p class="hint" style="margin:0">${lab} 수업에서 끝낸 활동을 체크하세요. 날짜가 바뀌면 자동으로 비워져요.</p>`+classes.map(cls=>{
+    const bl=state.blocks.filter(b=>b.cls===cls).sort(byStart), key=state.day+'|'+cls, D=doneOf(key), ks=actKeys(bl);
+    const st=bl[0].start, en=Math.max(...bl.map(b=>b.end)), n=ks.filter(k=>D[k]).length;
+    const rooms=[...new Set(bl.map(b=>roomLabel(b.room)))].join(' · ');
+    return `<div class="card chk ${st<=t&&t<en?'live':''} ${n===ks.length?'all':''}">
+      <div class="chead"><h2><button class="link" data-stu="${esc(cls)}">${esc(cls)}</button></h2><span class="hint">${esc(rooms)} ${fmt(st)}–${fmt(en)}</span><span class="cnt">${n}/${ks.length}</span></div>
+      <div class="items">${bl.map((b,i)=>`<label class="${D[ks[i]]?'on':''}"><input type="checkbox" data-dkey="${esc(key)}" data-act="${esc(ks[i])}" ${D[ks[i]]?'checked':''}><span class="num">${fmt(b.start)}</span> ${esc(label(b.act)||b.act||'수업')}</label>`).join('')}</div>
+    </div>`;
+  }).join('');
 }
 // 수업 시간 입력: 230 → 2:30, 1415 → 2:15 (1–9시는 오후)
 function parseHM(s){
@@ -847,7 +771,6 @@ function renderStudents(){
     return `<div class="card" id="stu-${esc(cls)}">
       <div class="shead"><h2>${esc(cls)}</h2><span class="hint" data-shint>${esc(schedHint(cls,list.length))}</span>
         <div class="tabs mini">${[['hw','숙제'],['list','명단']].map(([m,n])=>`<button data-mode="${m}" data-mcls="${esc(cls)}" aria-selected="${(stuMode[cls]||'hw')===m}">${n}</button>`).join('')}</div></div>
-      ${doneRow(cls)}
       ${(stuMode[cls]||'hw')==='hw'?hwTable(cls,list,match):`<label class="books"><span>교재</span><textarea rows="2" data-books="${esc(cls)}" placeholder="한 줄에 한 권씩&#10;예: Reading Explorer 2" aria-label="${esc(cls)} 교재">${esc(books)}</textarea></label>
       <div class="ttimes"><span class="lab">수업 시간</span>${DAYS.map(([k,n])=>{
         const sch=state.days[k].blocks.some(b=>b.cls===cls)?'시간표에 바로 반영돼요':'시간표에 없음';
@@ -904,7 +827,6 @@ $('#stu').addEventListener('change',e=>{
     const card=el.closest('.card');
     card.querySelectorAll(`[data-tday="${k}"]`).forEach(x=>{if(x!==document.activeElement) x.value=tval(c,k,x.dataset.tk)}); el.value=tval(c,k,key);
     card.querySelector('[data-shint]').textContent=schedHint(c,(state.students[c]||[]).length);
-    const a=card.querySelector('[data-acts]'); if(a) a.outerHTML=doneRow(c);
     toast(hit?`${roomLabel(hit.room)} ${hit.cls} 수업과 겹쳐요`:`${dayName(k)}요일 ${c} ${tval(c,k,'s')}–${tval(c,k,'e')}로 바꿨어요`);
     return;
   }
@@ -914,13 +836,13 @@ $('#stu').addEventListener('change',e=>{
   if(!Object.keys(T).length) delete state.times[c];
   save(); el.value=m!=null?fmt(m):'';
 });
-$('#stu').addEventListener('change',e=>{
+$('#chk').addEventListener('change',e=>{
   const el=e.target; if(el.dataset.dkey==null) return;
   const t=today(); if(!state.done||state.done.date!==t) state.done={date:t,c:{}};
   const C=state.done.c, M=(C[el.dataset.dkey]=C[el.dataset.dkey]||{});
   if(el.checked) M[el.dataset.act]=true; else delete M[el.dataset.act];
   if(!Object.keys(M).length) delete C[el.dataset.dkey];
-  save(); el.closest('label').classList.toggle('on',el.checked);
+  save(); renderChecks();
 });
 // 교재는 입력하는 대로 저장해요 (입력 중에 앱을 닫아도 남도록)
 $('#stu').addEventListener('input',e=>{
